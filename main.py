@@ -231,24 +231,25 @@ def update_pie_chart(country_value, start_date, end_date):
     grouped_by_country = countries_only_df[(countries_only_df['date'] >= start_date) & (countries_only_df['date'] <= end_date)].groupby('location')[
         ['people_vaccinated_per_hundred', 'people_fully_vaccinated_per_hundred', 'population']].max().reset_index()
     
-    print(grouped_by_country[grouped_by_country['location'] == country_value])
+    if(len(grouped_by_country[grouped_by_country['location'] == country_value]) > 0):
+        grouped_by_country['partially_vaccinated'] = (
+            grouped_by_country['population'] / 100) * grouped_by_country['people_vaccinated_per_hundred']
+        grouped_by_country['fully_vaccinated'] = (
+            grouped_by_country['population'] / 100) * grouped_by_country['people_fully_vaccinated_per_hundred']
+        grouped_by_country.head()
 
-    grouped_by_country['partially_vaccinated'] = (
-        grouped_by_country['population'] / 100) * grouped_by_country['people_vaccinated_per_hundred']
-    grouped_by_country['fully_vaccinated'] = (
-        grouped_by_country['population'] / 100) * grouped_by_country['people_fully_vaccinated_per_hundred']
-    grouped_by_country.head()
+        labels = ['Fully Vaccinated', 'Partially Vaccinated', 'Unvaccinated']
+        values = [
+            float(grouped_by_country[grouped_by_country['location'] == country_value]['partially_vaccinated']),
+            float(grouped_by_country[grouped_by_country['location'] == country_value]['partially_vaccinated'] -
+                grouped_by_country[grouped_by_country['location'] == country_value]['fully_vaccinated']),
+            float(grouped_by_country[grouped_by_country['location'] == country_value]['population'] -
+                grouped_by_country[grouped_by_country['location'] == country_value]['partially_vaccinated'])
+        ]
 
-    labels = ['Fully Vaccinated', 'Partially Vaccinated', 'Unvaccinated']
-    values = [
-        float(grouped_by_country[grouped_by_country['location'] == country_value]['partially_vaccinated']),
-        float(grouped_by_country[grouped_by_country['location'] == country_value]['partially_vaccinated'] -
-              grouped_by_country[grouped_by_country['location'] == country_value]['fully_vaccinated']),
-        float(grouped_by_country[grouped_by_country['location'] == country_value]['population'] -
-              grouped_by_country[grouped_by_country['location'] == country_value]['partially_vaccinated'])
-    ]
-
-    temp_df = pd.DataFrame({'labels': labels, 'values': values})
+        temp_df = pd.DataFrame({'labels': labels, 'values': values})
+    else:
+        temp_df = pd.DataFrame({'labels': [], 'values': []})
 
     fig = px.pie(
         temp_df,
