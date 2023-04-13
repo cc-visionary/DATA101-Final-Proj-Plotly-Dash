@@ -37,13 +37,13 @@ app.layout = html.Div([
                 'font-weight': 'bold', 'color': '#c19b7a'}),
         html.Div(children=[
             html.Div(children=[
-                html.P('Column'),
+                html.P('Column', style={'font-weight': 'bold'}),
                 dcc.Dropdown(['total_cases', 'total_deaths', 'new_cases', 'new_deaths',
                             'people_vaccinated', 'people_fully_vaccinated'], value='total_cases', id='column-dropdown', clearable=False, style={'width': '500px'})
             ]),
             html.Div(style={'flex': '1'}),
             html.Div(children=[
-                html.P('Timeframe'),
+                html.P('Timeframe', style={'font-weight': 'bold'}),
                 dcc.Dropdown(['All Time', 'Past Year', 'Past Month', 'Past Week'], value='All Time', id='timeframe-dropdown', clearable=False, style={'width': '500px'})
             ]),
         ], style={'display': 'flex', 'align-items': 'space-between', 'text-align': 'left'}),
@@ -52,19 +52,19 @@ app.layout = html.Div([
             dcc.Graph(id='choropleth-map', style={'flex': '1'}),
         ], style={'display': 'flex'})
     ], style={'text-align': 'center'}),
-    html.Hr(),
+    html.Hr(style={'border': '3px solid #fc8d59'}),
     html.Div(children=[
         html.H2('Per Country', style={
                 'font-weight': 'bold', 'color': '#c19b7a'}),
         html.Div(children=[
             html.Div(children=[
-                html.P('Country'),
+                html.P('Country', style={'font-weight': 'bold'}),
                 dcc.Dropdown(countries_only_df['Country/Region'].unique(), value=countries_only_df['Country/Region'].unique()[
                     0], id='country-dropdown', clearable=False, style={'width': '500px'})
             ]),
             html.Div(style={'flex': '1'}),
             html.Div(children=[
-                html.P('From/To'),
+                html.P('From/To', style={'font-weight': 'bold'}),
                 dcc.DatePickerRange(countries_only_df['date'].min(),
                                     countries_only_df['date'].max(),
                                     min_date_allowed=countries_only_df['date'].min(),
@@ -116,6 +116,14 @@ def update_bar_chart(column_value, timeframe_value):
     del filtered_df['people_fully_vaccinated']
     filtered_df['people_fully_vaccinated'] = people_fully_vaccinated
 
+    new_cases = filtered_df['new_cases']['mean']
+    del filtered_df['new_cases']
+    filtered_df['new_cases'] = new_cases
+    
+    new_deaths = filtered_df['new_deaths']['mean']
+    del filtered_df['new_deaths']
+    filtered_df['new_deaths'] = new_deaths
+
     fig = px.bar(filtered_df.sort_values(column_value, ascending=False).head(
         10), x='Country/Region', y=column_value, color=column_value, color_continuous_scale='orrd')
     fig.update_layout(title='Top 10 Countries with Most COVID-19 %s' % (column_value.replace('_', ' ').title()),
@@ -157,6 +165,14 @@ def update_choropleth_map(column_value, timeframe_value):
     people_fully_vaccinated = (filtered_df['people_fully_vaccinated']['max'] - filtered_df['people_fully_vaccinated']['min'])
     del filtered_df['people_fully_vaccinated']
     filtered_df['people_fully_vaccinated'] = people_fully_vaccinated
+
+    new_cases = filtered_df['new_cases']['mean']
+    del filtered_df['new_cases']
+    filtered_df['new_cases'] = new_cases
+    
+    new_deaths = filtered_df['new_deaths']['mean']
+    del filtered_df['new_deaths']
+    filtered_df['new_deaths'] = new_deaths
     
     fig = px.choropleth(filtered_df,
                         locations='Country/Region',
@@ -214,6 +230,8 @@ def update_pie_chart(country_value, start_date, end_date):
     # ================== Pie Chart ================== #
     grouped_by_country = countries_only_df[(countries_only_df['date'] >= start_date) & (countries_only_df['date'] <= end_date)].groupby('location')[
         ['people_vaccinated_per_hundred', 'people_fully_vaccinated_per_hundred', 'population']].max().reset_index()
+    
+    print(grouped_by_country[grouped_by_country['location'] == country_value])
 
     grouped_by_country['partially_vaccinated'] = (
         grouped_by_country['population'] / 100) * grouped_by_country['people_vaccinated_per_hundred']
@@ -223,8 +241,7 @@ def update_pie_chart(country_value, start_date, end_date):
 
     labels = ['Fully Vaccinated', 'Partially Vaccinated', 'Unvaccinated']
     values = [
-        float(grouped_by_country[grouped_by_country['location']
-              == country_value]['partially_vaccinated']),
+        float(grouped_by_country[grouped_by_country['location'] == country_value]['partially_vaccinated']),
         float(grouped_by_country[grouped_by_country['location'] == country_value]['partially_vaccinated'] -
               grouped_by_country[grouped_by_country['location'] == country_value]['fully_vaccinated']),
         float(grouped_by_country[grouped_by_country['location'] == country_value]['population'] -
